@@ -1,16 +1,16 @@
-# Imagen base
-FROM node:20-alpine
-
+# Stage 1: Build
+FROM node:20-alpine as build-stage
 WORKDIR /app
-
 COPY package*.json ./
-
 RUN npm install
-
 COPY . .
+RUN npm run build
 
-# Exponemos el puerto de Admin (5174)
-EXPOSE 5174
+# Stage 2: Serve with Nginx
+FROM nginx:stable-alpine
+COPY --from=build-stage /app/dist /usr/share/nginx/html
+# Configuración mínima para SPA routing en Nginx
+RUN echo 'server { listen 80; location / { root /usr/share/nginx/html; index index.html; try_files $uri $uri/ /index.html; } }' > /etc/nginx/conf.d/default.conf
 
-# Comando para iniciar Vite en modo desarrollo
-CMD ["npm", "run", "dev", "--", "--host"]
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
