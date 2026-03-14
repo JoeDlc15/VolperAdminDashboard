@@ -7,7 +7,8 @@ import {
     ShoppingBasket,
     Package,
     ArrowRightLeft,
-    Users
+    Users,
+    FileText
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -26,6 +27,7 @@ const Sidebar = () => {
         { icon: Package, label: 'Productos', path: '/productos' },
         { icon: ArrowRightLeft, label: 'Inventario', path: '/inventario' },
         { icon: Users, label: 'Clientes', path: '/clientes' },
+        { icon: FileText, label: 'Cotizaciones', path: '/cotizaciones' },
     ];
 
     return (

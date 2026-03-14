@@ -172,9 +172,9 @@ const ProductList = () => {
                                                                     {product.variants?.map((v) => (
                                                                         <tr key={v.sku} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                                                                             <td className="px-8 py-5">
-                                                                                <span className="text-xs font-black text-primary bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/20">
+                                                                                <p className="text-sm font-bold text-slate-700 dark:text-white uppercase">
                                                                                     {v.sku}
-                                                                                </span>
+                                                                                </p>
                                                                             </td>
                                                                             <td className="px-8 py-5">
                                                                                 <p className="text-sm font-bold text-slate-700 dark:text-white uppercase">

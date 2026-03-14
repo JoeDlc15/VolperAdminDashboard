@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import {
     LayoutDashboard,
     FileText,
@@ -13,15 +14,18 @@ import {
     Clock,
     CheckCircle2,
     Eye,
-    ChevronRight,
-    Loader2
+    Calendar,
+    Hash,
+    Loader2,
+    ChevronRight
 } from 'lucide-react';
 import {
     PieChart, Pie, Cell, ResponsiveContainer,
     BarChart, Bar, XAxis, YAxis, Tooltip, Legend
 } from 'recharts';
-import { getAdminQuotations, getAdminProducts, getAdminCustomers } from '../services/adminApi';
+import { getAdminQuotations, getAdminProducts, getAdminCustomers, getAdminQuotationById } from '../services/adminApi';
 import Sidebar from '../components/Sidebar';
+import QuotationDetailSidebar from '../components/QuotationDetailSidebar';
 
 const COLORS = ['#10b981', '#f59e0b', '#64748b', '#3b82f6'];
 
@@ -31,10 +35,31 @@ const Dashboard = () => {
     const [products, setProducts] = useState([]);
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedQuote, setSelectedQuote] = useState(null);
+    const [fetchingQuote, setFetchingQuote] = useState(false);
 
     useEffect(() => {
         fetchData();
+
+        // Escuchar el evento WebSocket también aquí para actualizar los datos
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        const SOCKET_URL = API_BASE_URL.replace('/api', '');
+        const socket = io(SOCKET_URL);
+
+        socket.on('new-quote', () => {
+            // Refrescar las cotizaciones cuando entra una nueva
+            fetchQuotationsOnly();
+        });
+
+        return () => {
+            socket.disconnect();
+        };
     }, []);
+
+    const fetchQuotationsOnly = async () => {
+        const q = await getAdminQuotations();
+        setQuotations(q || []);
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -47,6 +72,13 @@ const Dashboard = () => {
         setProducts(p || []);
         setCustomers(c || []);
         setLoading(false);
+    };
+
+    const handleViewQuote = async (id) => {
+        setFetchingQuote(true);
+        const quote = await getAdminQuotationById(id);
+        setSelectedQuote(quote);
+        setFetchingQuote(false);
     };
 
     // Estadísticas para gráficos
@@ -116,7 +148,7 @@ const Dashboard = () => {
                         <div className="xl:col-span-2 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
                             <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                                 <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Cotizaciones Recientes</h3>
-                                <button onClick={() => navigate('/')} className="text-[10px] font-black text-primary uppercase tracking-widest hover:gap-2 flex items-center gap-1.5 transition-all">
+                                <button onClick={() => navigate('/cotizaciones')} className="text-[10px] font-black text-primary uppercase tracking-widest hover:gap-2 flex items-center gap-1.5 transition-all">
                                     Ver todas <ArrowRight size={12} />
                                 </button>
                             </div>
@@ -136,8 +168,11 @@ const Dashboard = () => {
                                             <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${q.status === 'pending' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'}`}>
                                                 {q.status === 'pending' ? 'Pendiente' : 'Respondida'}
                                             </span>
-                                            <button className="p-2 text-slate-300 hover:text-primary transition-colors">
-                                                <Eye size={16} />
+                                            <button
+                                                onClick={() => handleViewQuote(q.id)}
+                                                className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
+                                            >
+                                                <Eye size={18} />
                                             </button>
                                         </div>
                                     </div>
@@ -220,6 +255,12 @@ const Dashboard = () => {
                     </div>
                 </div>
             </main>
+
+            {/* Sidebar de Detalles de Cotización */}
+            <QuotationDetailSidebar
+                quote={selectedQuote}
+                onClose={() => setSelectedQuote(null)}
+            />
         </div>
     );
 };
