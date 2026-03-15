@@ -10,6 +10,13 @@ const NotificationToast = ({ onNewQuote }) => {
     const [notifications, setNotifications] = useState([]);
 
     useEffect(() => {
+        // Solicitar permiso para notificaciones de sistema (OS)
+        if ("Notification" in window) {
+            if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+        }
+
         // Conectar al WebSocket
         const socket = io(SOCKET_URL);
 
@@ -21,10 +28,32 @@ const NotificationToast = ({ onNewQuote }) => {
         socket.on('new-quote', (quoteData) => {
             console.log('Nueva cotización recibida en tiempo real:', quoteData);
 
-            // Añadir a la lista de notificaciones locales (toast)
+            const companyName = quoteData.company || quoteData.contact;
+
+            // 1. Notificación de sistema (OS) - Estilo WhatsApp/Windows
+            if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                    const osNotification = new Notification("Nueva Cotización Volper Seal", {
+                        body: `📋 Solicitud de: ${companyName}\n🕒 Recibida: ${new Date().toLocaleTimeString()}\n\nHaga clic para abrir el panel.`,
+                        tag: 'new-quote-notification',
+                        silent: false,
+                        requireInteraction: false, // Se cierra sola según el SO
+                    });
+
+                    osNotification.onclick = (e) => {
+                        e.preventDefault();
+                        window.focus();
+                        removeNotification(newNotif.id);
+                    };
+                } catch (err) {
+                    console.error("Error al mostrar notificación de sistema:", err);
+                }
+            }
+
+            // 2. Notificación visual en la UI (Toast)
             const newNotif = {
                 id: Date.now(),
-                company: quoteData.company || quoteData.contact,
+                company: companyName,
                 time: new Date().toLocaleTimeString(),
             };
 

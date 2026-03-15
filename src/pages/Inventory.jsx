@@ -179,8 +179,8 @@ const Inventory = () => {
                                                         {v.imageUrl ? <img src={v.imageUrl} className="w-full h-full object-cover" /> : <Package size={20} />}
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none mb-1">{v.productName}</p>
-                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{v.name || 'Estándar'}</p>
+                                                        <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none mb-1">{v.name}</p>
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{v.productName || 'Estándar'}</p>
                                                     </div>
                                                 </div>
                                             </td>

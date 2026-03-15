@@ -1,33 +1,86 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap');
+
+@theme {
+  /* Premium Industrial Fonts */
+  --font-display: "Outfit", "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+
+  --color-primary: #059669;
+  --color-primary-light: #10b981;
+  --color-primary-dark: #34d399;
+  --color-primary-hover: #047857;
+}
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  /* Dynamic Theme Variables - Light Mode Default */
+  --bg-page: #f8fafc;
+  /* slate-50 */
+  --bg-surface: #ffffff;
+  --text-primary: #0f172a;
+  /* slate-900 */
+  --text-secondary: #475569;
+  /* slate-600 */
+  --border-subtle: rgba(226, 232, 240, 0.5);
+  /* slate-200/50 */
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --ease-premium: cubic-bezier(0.4, 0, 0.2, 1);
+
+  font-family: var(--font-body);
   line-height: 1.5;
   font-weight: 400;
-
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  margin: 0;
-  display: flex;
-  min-width: 320px;
-  min-height: 100vh;
+/* Dark Mode Overrides via CSS Variables */
+.dark {
+  --bg-page: #020617;
+  /* slate-950 */
+  --bg-surface: #0f172a;
+  /* slate-900 */
+  --text-primary: #f8fafc;
+  /* slate-50 */
+  --text-secondary: #94a3b8;
+  /* slate-400 */
+  --border-subtle: rgba(30, 41, 59, 0.5);
+  /* slate-800/50 */
+  --glass-bg: rgba(15, 23, 42, 0.8);
+}
+
+@layer base {
+  body {
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    transition: background-color 500ms var(--ease-premium), color 500ms var(--ease-premium);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    color: var(--text-primary);
+    @apply tracking-tight;
+  }
+}
+
+/* Glassmorphism utility for premium industrial surfaces */
+.glass-surface {
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 500ms var(--ease-premium);
 }
 
 #root {
   width: 100%;
 }
 
-@layer base {
-  body {
-    @apply bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100;
-  }
-}
+/* Standard Tailwind Dark Mode Support as Backup */
+@custom-variant dark (&:where(.dark, .dark *));
