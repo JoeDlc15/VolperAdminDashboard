@@ -7,7 +7,12 @@ import {
     Users,
     Hash,
     Loader2,
-    Filter
+    Filter,
+    ChevronDown,
+    ChevronUp,
+    Package,
+    AlertTriangle,
+    CheckCircle2
 } from 'lucide-react';
 import { getAdminQuotations, getAdminQuotationById } from '../services/adminApi';
 import Sidebar from '../components/Sidebar';
@@ -20,6 +25,7 @@ const Quotations = () => {
     const [statusFilter, setStatusFilter] = useState("all");
     const [selectedQuote, setSelectedQuote] = useState(null);
     const [fetchingQuote, setFetchingQuote] = useState(false);
+    const [expandedRowId, setExpandedRowId] = useState(null);
 
     useEffect(() => {
         fetchQuotations();
@@ -37,6 +43,10 @@ const Quotations = () => {
         const quote = await getAdminQuotationById(id);
         setSelectedQuote(quote);
         setFetchingQuote(false);
+    };
+
+    const toggleRow = (id) => {
+        setExpandedRowId(expandedRowId === id ? null : id);
     };
 
     const filtered = quotations.filter(q => {
@@ -67,7 +77,6 @@ const Quotations = () => {
                     </div>
 
                     <div className="flex items-center gap-6">
-                        {/* Filtro de Estado */}
                         <div className="flex bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-2xl border border-slate-200/50 dark:border-slate-700/30">
                             <button
                                 onClick={() => setStatusFilter("all")}
@@ -126,50 +135,137 @@ const Quotations = () => {
                                             <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Empresa / Contacto</th>
                                             <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Email / Contacto</th>
                                             <th className="px-8 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-40">Estado</th>
-                                            <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-32">Detalles</th>
+                                            <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-48">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100/50 dark:divide-slate-800/30">
-                                        {filtered.map((q) => (
-                                            <tr key={q.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-all duration-300 group">
-                                                <td className="px-8 py-5">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-11 h-11 bg-slate-100/80 dark:bg-slate-800/80 rounded-2xl flex items-center justify-center text-slate-500 font-black text-xs border border-slate-200/50 dark:border-slate-700/50 group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary transition-all">
-                                                            #{q.id}
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{new Date(q.createdAt).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}</p>
-                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date(q.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-8 py-5">
-                                                    <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tighter group-hover:text-primary transition-colors line-clamp-1">{q.company}</p>
-                                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{q.contact}</p>
-                                                </td>
-                                                <td className="px-8 py-5">
-                                                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300">{q.email}</p>
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-tight">{q.phone}</p>
-                                                </td>
-                                                <td className="px-8 py-5 text-center">
-                                                    <span className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm border ${q.status === 'pending'
-                                                        ? 'bg-amber-100/80 text-amber-600 border-amber-200/50'
-                                                        : 'bg-emerald-100/80 text-emerald-600 border-emerald-200/50'
-                                                        }`}>
-                                                        {q.status === 'pending' ? 'Pendiente' : 'Enviada'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-8 py-5 text-right">
-                                                    <button
-                                                        onClick={() => handleViewQuote(q.id)}
-                                                        className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-white hover:bg-primary rounded-2xl transition-all shadow-md active:scale-90"
-                                                        title="Ver Detalles"
-                                                    >
-                                                        <Eye size={18} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {filtered.map((q) => {
+                                            const isExpanded = expandedRowId === q.id;
+                                            return (
+                                                <React.Fragment key={q.id}>
+                                                    <tr className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-all duration-300 group ${isExpanded ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
+                                                        <td className="px-8 py-5">
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-[10px] font-black bg-slate-100/80 dark:bg-slate-800/80 text-slate-500 border border-slate-200/50 dark:border-slate-700/50">
+                                                                    {q.maskId || `#${q.id}`}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{new Date(q.createdAt).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}</p>
+                                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date(q.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-8 py-5">
+                                                            <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tighter group-hover:text-primary transition-colors line-clamp-1">{q.company}</p>
+                                                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{q.contact}</p>
+                                                        </td>
+                                                        <td className="px-8 py-5">
+                                                            <p className="text-xs font-bold text-slate-600 dark:text-slate-300">{q.email}</p>
+                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tight">{q.phone}</p>
+                                                        </td>
+                                                        <td className="px-8 py-5 text-center">
+                                                            <span className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm border ${q.status === 'pending'
+                                                                ? 'bg-amber-100/80 text-amber-600 border-amber-200/50'
+                                                                : 'bg-emerald-100/80 text-emerald-600 border-emerald-200/50'
+                                                                }`}>
+                                                                {q.status === 'pending' ? 'Pendiente' : 'Enviada'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-8 py-5 text-right">
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                <button
+                                                                    onClick={() => toggleRow(q.id)}
+                                                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 ${isExpanded
+                                                                        ? 'bg-primary text-black'
+                                                                        : 'bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:text-primary'}`}
+                                                                >
+                                                                    <Package size={14} />
+                                                                    {isExpanded ? 'Cerrar' : 'Disponibilidad'}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleViewQuote(q.id)}
+                                                                    className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-white hover:bg-primary rounded-2xl transition-all shadow-md active:scale-90"
+                                                                    title="Ver Detalles Completos"
+                                                                >
+                                                                    <Eye size={18} />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+
+                                                    {isExpanded && (
+                                                        <tr>
+                                                            <td colSpan="5" className="px-8 py-0">
+                                                                <div className="py-8 border-t border-slate-100 dark:border-slate-800/50 animate-in slide-in-from-top-4 duration-500">
+                                                                    <div className="mb-6 flex items-center gap-3">
+                                                                        <div className="w-1.5 h-6 bg-primary rounded-full" />
+                                                                        <h4 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-[0.2em]">Cruce de Inventario Real para Cotización #{q.id}</h4>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                                        {q.items?.map((item, idx) => {
+                                                                            const stockNum = Number(item.currentStock || 0);
+                                                                            const quantNum = Number(item.quantity || 0);
+                                                                            const isStockCritical = stockNum <= 0;
+                                                                            const isStockLow = stockNum < quantNum && !isStockCritical;
+
+                                                                            return (
+                                                                                <div key={idx} className={`p-6 rounded-[2.5rem] border transition-all shadow-sm flex flex-col justify-between ${isStockCritical ? 'bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50' : isStockLow ? 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50' : 'bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800'}`}>
+                                                                                    <div>
+                                                                                        <div className="flex justify-between items-start mb-4">
+                                                                                            <p className="text-xs font-black text-slate-900 dark:text-white uppercase leading-tight line-clamp-2 flex-1 mr-4">{item.productName}</p>
+                                                                                            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 ${isStockCritical ? 'bg-red-500 text-white' : isStockLow ? 'bg-amber-500 text-white' : 'bg-emerald-500 text-white'}`}>
+                                                                                                {isStockCritical ? <AlertTriangle size={10} /> : isStockLow ? <AlertTriangle size={10} /> : <CheckCircle2 size={10} />}
+                                                                                                {isStockCritical ? 'Sin Stock' : isStockLow ? 'Insuficiente' : 'Disponible'}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                        <div className="space-y-3 mb-6">
+                                                                                            <div className="flex items-center justify-between text-[10px] font-bold">
+                                                                                                <span className="text-slate-400 uppercase tracking-widest">Código SKU</span>
+                                                                                                <span className="text-slate-600 dark:text-slate-300 font-mono">{item.sku}</span>
+                                                                                            </div>
+                                                                                            <div className="flex items-center justify-between text-[10px] font-bold">
+                                                                                                <span className="text-slate-400 uppercase tracking-widest">Cantidad en Pedido</span>
+                                                                                                <span className="text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs">{quantNum}</span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    <div className={`p-4 rounded-3xl border ${isStockCritical ? 'bg-red-100/50 border-red-200' : isStockLow ? 'bg-amber-100/50 border-amber-200' : 'bg-emerald-50/50 border-emerald-100'}`}>
+                                                                                        <div className="flex items-center justify-between">
+                                                                                            <div>
+                                                                                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Stock en Sistema</p>
+                                                                                                <p className={`text-3xl font-black leading-none ${isStockCritical ? 'text-red-600' : isStockLow ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                                                                                    {stockNum}
+                                                                                                </p>
+                                                                                            </div>
+                                                                                            <div className="text-right">
+                                                                                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Diferencia</p>
+                                                                                                <p className={`text-sm font-black ${stockNum - quantNum >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                                                                    {stockNum - quantNum >= 0 ? `+${stockNum - quantNum}` : stockNum - quantNum}
+                                                                                                </p>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    {(isStockCritical || isStockLow) && (
+                                                                                        <div className={`mt-4 p-3 rounded-2xl flex items-center gap-3 ${isStockCritical ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'}`}>
+                                                                                            <AlertTriangle size={16} />
+                                                                                            <p className="text-[9px] font-black uppercase tracking-widest leading-tight">
+                                                                                                {isStockCritical ? 'Urgente: Stock agotado. No se puede atender.' : 'Atención: No alcanza para cubrir el total.'}
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </React.Fragment>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
