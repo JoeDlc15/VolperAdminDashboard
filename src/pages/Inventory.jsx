@@ -66,7 +66,9 @@ const Inventory = () => {
         if (!movForm.productId || !movForm.variantId || !movForm.quantity) return;
         setSaving(true);
 
-        const qty = movForm.movementType === 'salida' ? -Math.abs(Number(movForm.quantity)) : Math.abs(Number(movForm.quantity));
+        // El backend ahora normaliza siempre con Math.abs según el tipo, 
+        // pero enviamos positivo para evitar confusiones de doble signo.
+        const qty = Math.abs(Number(movForm.quantity));
 
         const result = await createMovement({
             ...movForm,
@@ -188,18 +190,24 @@ const Inventory = () => {
                                                 <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded-lg">{v.sku}</span>
                                             </td>
                                             <td className="px-6 py-5 text-right">
-                                                <p className={`text-sm font-black ${v.stock <= v.minStock ? 'text-rose-600' : 'text-slate-900 dark:text-white'}`}>{v.stock} <span className="text-[10px] font-bold text-slate-400">{v.unit}</span></p>
+                                                <p className={`text-sm font-black inline-block px-3 py-1 rounded-xl transition-all ${v.stock <= 0 ? 'bg-rose-600 text-white animate-pulse shadow-lg shadow-rose-500/20' : v.stock <= v.minStock ? 'bg-orange-500 text-white shadow-md shadow-orange-500/10' : 'text-slate-900 dark:text-white'}`}>
+                                                    {v.stock} <span className={`text-[10px] font-bold ${v.stock <= v.minStock ? 'text-white/80' : 'text-slate-400'}`}>{v.unit}</span>
+                                                </p>
                                             </td>
                                             <td className="px-6 py-5 text-right">
                                                 <p className="text-sm font-bold text-slate-400">{v.minStock} {v.unit}</p>
                                             </td>
                                             <td className="px-6 py-5 text-center">
-                                                {v.stock <= v.minStock ? (
-                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 text-[10px] font-black uppercase tracking-widest">
+                                                {v.stock <= 0 ? (
+                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-rose-500/20">
+                                                        <AlertTriangle size={10} /> AGOTADO
+                                                    </span>
+                                                ) : v.stock <= v.minStock ? (
+                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 text-[10px] font-black uppercase tracking-widest">
                                                         <AlertTriangle size={10} /> Reabastecer
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 text-[10px] font-black uppercase tracking-widest">
+                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 text-[10px] font-black uppercase tracking-widest text-center">
                                                         Saludable
                                                     </span>
                                                 )}

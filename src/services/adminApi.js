@@ -169,3 +169,85 @@ export const updateCustomer = async (id, customerData) => {
         return null;
     }
 };
+
+// --- GESTIÓN DE CATEGORÍAS ---
+
+export const getAdminCategories = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/categories`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) throw new Error('Error al obtener categorías');
+        return await response.json();
+    } catch (error) {
+        console.error('Admin API Error:', error);
+        return [];
+    }
+};
+
+export const createAdminCategory = async (data) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/categories`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) throw new Error('Error al crear categoría');
+        return await response.json();
+    } catch (error) {
+        console.error('Admin API Error:', error);
+        return null;
+    }
+};
+
+export const updateAdminCategory = async (id, data) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/categories/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) throw new Error('Error al actualizar categoría');
+        return await response.json();
+    } catch (error) {
+        console.error('Admin API Error:', error);
+        return null;
+    }
+};
+
+export const deleteAdminCategory = async (id) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/categories/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Error al eliminar categoría');
+        return data;
+    } catch (error) {
+        console.error('Admin API Error:', error);
+        return { error: error.message };
+    }
+};
+
+export const importAdminProducts = async (file) => {
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API_BASE_URL}/admin/products/import`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Error al importar productos');
+        return data;
+    } catch (error) {
+        console.error('Admin API Error:', error);
+        throw error;
+    }
+};

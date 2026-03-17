@@ -10,6 +10,7 @@ import {
     ArrowRightLeft,
     Users,
     FileText,
+    Tag,
     Sun,
     Moon
 } from 'lucide-react';
@@ -29,6 +30,7 @@ const Sidebar = () => {
     const navItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
         { icon: Package, label: 'Productos', path: '/productos' },
+        { icon: Tag, label: 'Categorías', path: '/categorias' },
         { icon: ArrowRightLeft, label: 'Inventario', path: '/inventario' },
         { icon: Users, label: 'Clientes', path: '/clientes' },
         { icon: FileText, label: 'Cotizaciones', path: '/cotizaciones' },

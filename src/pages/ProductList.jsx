@@ -10,9 +10,11 @@ import {
     X,
     Loader2,
     CheckCircle2,
-    AlertCircle
+    AlertCircle,
+    RotateCcw,
+    Upload
 } from 'lucide-react';
-import { getAdminProducts, updateAdminProduct, updateVariant } from '../services/adminApi';
+import { getAdminProducts, updateVariant, importAdminProducts } from '../services/adminApi';
 import Sidebar from '../components/Sidebar';
 
 const ProductList = () => {
@@ -21,8 +23,13 @@ const ProductList = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedProduct, setExpandedProduct] = useState(null);
     const [editingVariant, setEditingVariant] = useState(null);
-    const [editForm, setEditForm] = useState({ price: '', stock: '' });
+    const [editType, setEditType] = useState('full'); // 'stock' | 'full'
+    const [editForm, setEditForm] = useState({ price: '', stock: '', name: '' });
     const [message, setMessage] = useState(null);
+    const [importModal, setImportModal] = useState(false);
+    const [importFile, setImportFile] = useState(null);
+    const [importing, setImporting] = useState(false);
+    const [importResults, setImportResults] = useState(null);
 
     useEffect(() => {
         fetchProducts();
@@ -38,8 +45,9 @@ const ProductList = () => {
     const handleUpdateVariant = async (sku) => {
         setLoading(true);
         const success = await updateVariant(sku, {
-            price: parseFloat(editForm.price),
-            stock: parseInt(editForm.stock)
+            price: editType === 'full' ? parseFloat(editForm.price) : undefined,
+            stock: parseInt(editForm.stock),
+            name: editType === 'full' ? editForm.name : undefined
         });
 
         if (success) {
@@ -51,6 +59,20 @@ const ProductList = () => {
         }
         setLoading(false);
         setTimeout(() => setMessage(null), 3000);
+    };
+
+    const handleImport = async () => {
+        if (!importFile) return;
+        setImporting(true);
+        try {
+            const result = await importAdminProducts(importFile);
+            setImportResults(result.stats);
+            fetchProducts();
+        } catch (error) {
+            setMessage({ type: 'error', text: error.message });
+        } finally {
+            setImporting(false);
+        }
     };
 
     const filteredProducts = products.filter(p =>
@@ -89,6 +111,12 @@ const ProductList = () => {
                                 className="h-11 bg-slate-50 dark:bg-slate-800/50 border-2 border-transparent focus:border-primary/30 focus:bg-white dark:focus:bg-slate-800 rounded-xl pl-12 pr-4 text-sm font-bold w-64 transition-all outline-none"
                             />
                         </div>
+                        <button
+                            onClick={() => setImportModal(true)}
+                            className="h-11 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black uppercase tracking-widest text-[10px] rounded-xl px-6 flex items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700"
+                        >
+                            <Upload size={16} /> Importar
+                        </button>
                         <button className="h-11 bg-primary text-white font-black uppercase tracking-widest text-[10px] rounded-xl px-6 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20">
                             <Plus size={16} /> Nuevo Producto
                         </button>
@@ -101,6 +129,106 @@ const ProductList = () => {
                             }`}>
                             {message.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
                             <span className="text-xs font-black uppercase tracking-widest">{message.text}</span>
+                        </div>
+                    )}
+
+                    {importModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-300">
+                            <div className="glass-surface w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-300">
+                                <div className="flex items-center justify-between mb-8">
+                                    <div>
+                                        <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Importación Masiva</h3>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sube tu archivo CSV o XLSX</p>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            setImportModal(false);
+                                            setImportFile(null);
+                                            setImportResults(null);
+                                        }}
+                                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                                    >
+                                        <X size={20} className="text-slate-400" />
+                                    </button>
+                                </div>
+
+                                {!importResults ? (
+                                    <div className="space-y-6">
+                                        <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center group hover:border-primary/30 transition-colors">
+                                            <input
+                                                type="file"
+                                                accept=".csv,.xlsx"
+                                                id="file-upload"
+                                                className="hidden"
+                                                onChange={(e) => setImportFile(e.target.files[0])}
+                                            />
+                                            <label htmlFor="file-upload" className="cursor-pointer">
+                                                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                                    <Upload className="text-primary" size={32} />
+                                                </div>
+                                                <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight mb-1">
+                                                    {importFile ? importFile.name : 'Seleccionar Archivo'}
+                                                </p>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">CSV o Excel (.xlsx)</p>
+                                            </label>
+                                        </div>
+
+                                        <button
+                                            onClick={handleImport}
+                                            disabled={!importFile || importing}
+                                            className="w-full h-14 bg-primary text-white font-black uppercase tracking-widest text-xs rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:hover:scale-100"
+                                        >
+                                            {importing ? (
+                                                <>
+                                                    <Loader2 className="animate-spin" size={20} />
+                                                    Procesando...
+                                                </>
+                                            ) : (
+                                                'Iniciar Importación'
+                                            )}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100/50 text-center">
+                                                <p className="text-lg font-black text-emerald-600">{importResults.created}</p>
+                                                <p className="text-[8px] font-black text-emerald-600/60 uppercase tracking-widest">Creados</p>
+                                            </div>
+                                            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100/50 text-center">
+                                                <p className="text-lg font-black text-blue-600">{importResults.updated}</p>
+                                                <p className="text-[8px] font-black text-blue-600/60 uppercase tracking-widest">Actualizados</p>
+                                            </div>
+                                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
+                                                <p className="text-lg font-black text-slate-400">{importResults.skipped}</p>
+                                                <p className="text-[8px] font-black text-slate-400/60 uppercase tracking-widest">Omitidos</p>
+                                            </div>
+                                        </div>
+
+                                        {importResults.errors?.length > 0 && (
+                                            <div className="p-4 bg-rose-50 dark:bg-rose-900/20 rounded-2xl border border-rose-100/50">
+                                                <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-3">Errores Encontrados:</p>
+                                                <div className="max-h-32 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                                                    {importResults.errors.map((err, i) => (
+                                                        <p key={i} className="text-[10px] font-bold text-rose-500/80 leading-relaxed">• {err}</p>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <button
+                                            onClick={() => {
+                                                setImportModal(false);
+                                                setImportFile(null);
+                                                setImportResults(null);
+                                            }}
+                                            className="w-full h-12 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all active:scale-95"
+                                        >
+                                            Cerrar
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -195,12 +323,16 @@ const ProductList = () => {
                                                                             <td className="px-8 py-5">
                                                                                 <div className="flex flex-col">
                                                                                     <div className="flex items-center gap-2">
-                                                                                        <span className={`text-sm font-black ${v.stock < 10 ? 'text-rose-500 animate-pulse-slow' : 'text-slate-900 dark:text-white'}`}>
+                                                                                        <span className={`text-sm font-black ${v.stock <= 0 ? 'text-rose-600 bg-rose-50 dark:bg-rose-900/40 px-2 py-0.5 rounded-lg border border-rose-200 animate-pulse' : v.stock < 10 ? 'text-orange-500 animate-pulse-slow' : 'text-slate-900 dark:text-white'}`}>
                                                                                             {v.stock}
                                                                                         </span>
                                                                                         <span className="text-[10px] font-bold text-slate-400 uppercase">{v.unit}</span>
                                                                                     </div>
-                                                                                    {v.stock < 10 && <span className="text-[8px] font-black text-rose-400 uppercase tracking-widest leading-none mt-1">Crítico</span>}
+                                                                                    {v.stock <= 0 ? (
+                                                                                        <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest leading-none mt-1">Sin Stock</span>
+                                                                                    ) : v.stock < 10 && (
+                                                                                        <span className="text-[8px] font-black text-orange-400 uppercase tracking-widest leading-none mt-1">Bajo Stock</span>
+                                                                                    )}
                                                                                 </div>
                                                                             </td>
                                                                             <td className="px-8 py-5">
@@ -213,20 +345,31 @@ const ProductList = () => {
                                                                                     {editingVariant === v.sku ? (
                                                                                         <div className="flex items-center gap-3 animate-in zoom-in-95 duration-200 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-2xl border border-primary/20">
                                                                                             <div className="flex items-center gap-2">
+                                                                                                {editType === 'full' && (
+                                                                                                    <input
+                                                                                                        type="text"
+                                                                                                        value={editForm.name}
+                                                                                                        onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                                                                                                        className="w-32 h-9 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-2 text-xs font-bold outline-none focus:border-primary/50"
+                                                                                                        placeholder="Nombre"
+                                                                                                    />
+                                                                                                )}
                                                                                                 <input
                                                                                                     type="number"
                                                                                                     value={editForm.stock}
                                                                                                     onChange={e => setEditForm({ ...editForm, stock: e.target.value })}
-                                                                                                    className="w-16 h-9 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-2 text-xs font-black outline-none focus:border-primary/50 transition-all"
+                                                                                                    className="w-20 h-9 bg-primary/5 dark:bg-primary/20 border-2 border-primary/30 rounded-xl px-2 text-xs font-black outline-none focus:border-primary transition-all"
                                                                                                     placeholder="Stock"
                                                                                                 />
-                                                                                                <input
-                                                                                                    type="number"
-                                                                                                    value={editForm.price}
-                                                                                                    onChange={e => setEditForm({ ...editForm, price: e.target.value })}
-                                                                                                    className="w-24 h-9 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-2 text-xs font-black outline-none focus:border-primary/50 transition-all"
-                                                                                                    placeholder="Precio"
-                                                                                                />
+                                                                                                {editType === 'full' && (
+                                                                                                    <input
+                                                                                                        type="number"
+                                                                                                        value={editForm.price}
+                                                                                                        onChange={e => setEditForm({ ...editForm, price: e.target.value })}
+                                                                                                        className="w-20 h-9 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-2 text-xs font-black outline-none focus:border-primary/50"
+                                                                                                        placeholder="Precio"
+                                                                                                    />
+                                                                                                )}
                                                                                             </div>
                                                                                             <button
                                                                                                 onClick={() => handleUpdateVariant(v.sku)}
@@ -248,15 +391,26 @@ const ProductList = () => {
                                                                                             <button
                                                                                                 onClick={(e) => {
                                                                                                     e.stopPropagation();
+                                                                                                    setEditType('stock');
                                                                                                     setEditingVariant(v.sku);
-                                                                                                    setEditForm({ price: v.price, stock: v.stock });
+                                                                                                    setEditForm({ price: v.price, stock: v.stock, name: v.name });
                                                                                                 }}
-                                                                                                className="p-2.5 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
+                                                                                                className="flex items-center gap-2 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-primary bg-primary/10 hover:bg-primary hover:text-white rounded-xl transition-all border border-primary/20"
+                                                                                                title="Ajuste Rápido de Stock"
+                                                                                            >
+                                                                                                <RotateCcw size={12} /> Stock
+                                                                                            </button>
+                                                                                            <button
+                                                                                                onClick={(e) => {
+                                                                                                    e.stopPropagation();
+                                                                                                    setEditType('full');
+                                                                                                    setEditingVariant(v.sku);
+                                                                                                    setEditForm({ price: v.price, stock: v.stock, name: v.name });
+                                                                                                }}
+                                                                                                className="p-2.5 text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"
+                                                                                                title="Editar información completa"
                                                                                             >
                                                                                                 <Edit2 size={16} />
-                                                                                            </button>
-                                                                                            <button className="p-2.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-xl transition-all">
-                                                                                                <X size={16} className="rotate-45" />
                                                                                             </button>
                                                                                         </div>
                                                                                     )}

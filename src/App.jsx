@@ -6,6 +6,7 @@ import ProductList from './pages/ProductList';
 import Inventory from './pages/Inventory';
 import Customers from './pages/Customers';
 import Quotations from './pages/Quotations';
+import Categories from './pages/Categories';
 import NotificationToast from './components/NotificationToast';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 
@@ -62,6 +63,11 @@ function App() {
                         <Route path="/cotizaciones" element={
                             <ProtectedRoute>
                                 <Quotations />
+                            </ProtectedRoute>
+                        } />
+                        <Route path="/categorias" element={
+                            <ProtectedRoute>
+                                <Categories />
                             </ProtectedRoute>
                         } />
                         <Route path="*" element={<Navigate to="/" />} />
