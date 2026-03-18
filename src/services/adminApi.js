@@ -65,21 +65,6 @@ export const getAdminProducts = async () => {
     }
 };
 
-export const updateAdminProduct = async (id, data) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/admin/productos/${id}`, {
-            method: 'PUT',
-            headers: getHeaders(),
-            body: JSON.stringify(data)
-        });
-        if (!response.ok) throw new Error('Error al actualizar producto');
-        return await response.json();
-    } catch (error) {
-        console.error('Admin API Error:', error);
-        return null;
-    }
-};
-
 export const updateVariant = async (sku, data) => {
     try {
         const response = await fetch(`${API_BASE_URL}/admin/variantes/${sku}`, {
@@ -245,6 +230,84 @@ export const importAdminProducts = async (file) => {
 
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Error al importar productos');
+        return data;
+    } catch (error) {
+        console.error('Admin API Error:', error);
+        throw error;
+    }
+};
+
+export const createAdminProduct = async (productData) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/products`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(productData)
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Error al crear producto');
+        return data;
+    } catch (error) {
+        console.error('Admin API Error:', error);
+        throw error;
+    }
+};
+
+export const updateAdminProduct = async (id, productData) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/products/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(productData)
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Error al actualizar producto');
+        return data;
+    } catch (error) {
+        console.error('Admin API Error:', error);
+        throw error;
+    }
+};
+
+export const deleteAdminProduct = async (id) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/products/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Error al eliminar producto');
+        return data;
+    } catch (error) {
+        console.error('Admin API Error:', error);
+        throw error;
+    }
+};
+
+export const addAdminVariant = async (productId, variantData) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/products/${productId}/variants`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(variantData)
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Error al agregar variante');
+        return data;
+    } catch (error) {
+        console.error('Admin API Error:', error);
+        throw error;
+    }
+};
+
+export const deleteAdminVariant = async (sku) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/variants/${sku}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Error al eliminar variante');
         return data;
     } catch (error) {
         console.error('Admin API Error:', error);

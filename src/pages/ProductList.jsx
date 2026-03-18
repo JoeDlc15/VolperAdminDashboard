@@ -12,9 +12,21 @@ import {
     CheckCircle2,
     AlertCircle,
     RotateCcw,
-    Upload
+    Upload,
+    Trash2,
+    Edit
 } from 'lucide-react';
-import { getAdminProducts, updateVariant, importAdminProducts } from '../services/adminApi';
+import {
+    getAdminProducts,
+    updateVariant,
+    importAdminProducts,
+    createAdminProduct,
+    updateAdminProduct,
+    deleteAdminProduct,
+    addAdminVariant,
+    deleteAdminVariant,
+    getAdminCategories
+} from '../services/adminApi';
 import Sidebar from '../components/Sidebar';
 
 const ProductList = () => {
@@ -30,10 +42,23 @@ const ProductList = () => {
     const [importFile, setImportFile] = useState(null);
     const [importing, setImporting] = useState(false);
     const [importResults, setImportResults] = useState(null);
+    const [categories, setCategories] = useState([]);
+
+    // Modales y formularios
+    const [productModal, setProductModal] = useState({ open: false, type: 'create', data: null });
+    const [variantModal, setVariantModal] = useState({ open: false, productId: null });
+    const [productForm, setProductForm] = useState({ name: '', description: '', categoryId: '', initialVariant: { sku: '', price: '', stock: '' } });
+    const [variantForm, setVariantForm] = useState({ sku: '', name: '', price: '', stock: '', unit: 'pza' });
 
     useEffect(() => {
         fetchProducts();
+        fetchCategories();
     }, []);
+
+    const fetchCategories = async () => {
+        const data = await getAdminCategories();
+        setCategories(data || []);
+    };
 
     const fetchProducts = async () => {
         setLoading(true);
@@ -56,6 +81,64 @@ const ProductList = () => {
             fetchProducts();
         } else {
             setMessage({ type: 'error', text: 'Error al actualizar la variante' });
+        }
+        setLoading(false);
+        setTimeout(() => setMessage(null), 3000);
+    };
+
+    const handleCreateProduct = async () => {
+        setLoading(true);
+        try {
+            await createAdminProduct(productForm);
+            setMessage({ type: 'success', text: 'Producto creado exitosamente' });
+            setProductModal({ open: false, type: 'create', data: null });
+            setProductForm({ name: '', description: '', categoryId: '', initialVariant: { sku: '', price: '', stock: '' } });
+            fetchProducts();
+        } catch (error) {
+            setMessage({ type: 'error', text: error.message });
+        }
+        setLoading(false);
+        setTimeout(() => setMessage(null), 3000);
+    };
+
+    const handleDeleteProduct = async (id) => {
+        if (!window.confirm('¿Estás seguro de eliminar este producto y TODAS sus variantes? Esta acción no se puede deshacer.')) return;
+        setLoading(true);
+        try {
+            await deleteAdminProduct(id);
+            setMessage({ type: 'success', text: 'Producto eliminado' });
+            fetchProducts();
+        } catch (error) {
+            setMessage({ type: 'error', text: error.message });
+        }
+        setLoading(false);
+        setTimeout(() => setMessage(null), 3000);
+    };
+
+    const handleAddVariant = async () => {
+        setLoading(true);
+        try {
+            await addAdminVariant(variantModal.productId, variantForm);
+            setMessage({ type: 'success', text: 'Variante agregada exitosamente' });
+            setVariantModal({ open: false, productId: null });
+            setVariantForm({ sku: '', name: '', price: '', stock: '', unit: 'pza' });
+            fetchProducts();
+        } catch (error) {
+            setMessage({ type: 'error', text: error.message });
+        }
+        setLoading(false);
+        setTimeout(() => setMessage(null), 3000);
+    };
+
+    const handleDeleteVariant = async (sku) => {
+        if (!window.confirm('¿Estás seguro de eliminar esta variante?')) return;
+        setLoading(true);
+        try {
+            await deleteAdminVariant(sku);
+            setMessage({ type: 'success', text: 'Variante eliminada' });
+            fetchProducts();
+        } catch (error) {
+            setMessage({ type: 'error', text: error.message });
         }
         setLoading(false);
         setTimeout(() => setMessage(null), 3000);
@@ -117,7 +200,10 @@ const ProductList = () => {
                         >
                             <Upload size={16} /> Importar
                         </button>
-                        <button className="h-11 bg-primary text-white font-black uppercase tracking-widest text-[10px] rounded-xl px-6 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20">
+                        <button
+                            onClick={() => setProductModal({ open: true, type: 'create', data: null })}
+                            className="h-11 bg-primary text-white font-black uppercase tracking-widest text-[10px] rounded-xl px-6 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                        >
                             <Plus size={16} /> Nuevo Producto
                         </button>
                     </div>
@@ -241,6 +327,7 @@ const ProductList = () => {
                                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Categoría</th>
                                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Referencia</th>
                                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Variantes</th>
+                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100/50 dark:divide-slate-800/30">
@@ -278,14 +365,31 @@ const ProductList = () => {
                                             <td className="px-6 py-5 text-center">
                                                 <span className="text-xs font-black text-primary-light dark:text-primary-dark bg-primary/10 px-3.5 py-1.5 rounded-xl border border-primary/10 group-hover:scale-110 inline-block transition-transform">{product.variants?.length || 0}</span>
                                             </td>
+                                            <td className="px-6 py-5 text-right">
+                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteProduct(product.id);
+                                                        }}
+                                                        className="p-2.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all"
+                                                        title="Eliminar Producto"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
                                         </tr>
                                         {expandedProduct === product.id && (
                                             <tr className="bg-slate-50/50 dark:bg-slate-950/20">
-                                                <td colSpan="5" className="px-8 py-8">
+                                                <td colSpan="6" className="px-8 py-8">
                                                     <div className="glass-surface rounded-[2rem] overflow-hidden shadow-lg animate-in slide-in-from-top-4 duration-500">
                                                         <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-white/50 dark:bg-slate-900/50">
                                                             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Variantes de Producto</h4>
-                                                            <button className="flex items-center gap-2 text-[10px] font-black text-primary hover:text-white uppercase tracking-widest hover:bg-primary px-4 py-2.5 rounded-xl transition-all border border-primary/30 active:scale-95 shadow-lg shadow-primary/5">
+                                                            <button
+                                                                onClick={() => setVariantModal({ open: true, productId: product.id })}
+                                                                className="flex items-center gap-2 text-[10px] font-black text-primary hover:text-white uppercase tracking-widest hover:bg-primary px-4 py-2.5 rounded-xl transition-all border border-primary/30 active:scale-95 shadow-lg shadow-primary/5"
+                                                            >
                                                                 <Plus size={14} /> Agregar Variante
                                                             </button>
                                                         </div>
@@ -432,6 +536,197 @@ const ProductList = () => {
                     </div>
                 </div>
             </main>
+            {/* Modal Nuevo Producto */}
+            {productModal.open && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="glass-surface w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="px-10 py-8 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-white/50 dark:bg-slate-900/50">
+                            <div>
+                                <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Nuevo Producto</h3>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Configuración básica y variante inicial</p>
+                            </div>
+                            <button onClick={() => setProductModal({ open: false })} className="w-10 h-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-10 space-y-8 max-h-[70vh] overflow-y-auto">
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre del Producto</label>
+                                    <input
+                                        type="text"
+                                        value={productForm.name}
+                                        onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                        placeholder="Ej. Cono de 12 pulgadas"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Categoría</label>
+                                    <select
+                                        value={productForm.categoryId}
+                                        onChange={(e) => setProductForm({ ...productForm, categoryId: e.target.value })}
+                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+                                    >
+                                        <option value="">Seleccionar Categoría</option>
+                                        {categories.map(cat => (
+                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Descripción</label>
+                                <textarea
+                                    value={productForm.description}
+                                    onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[100px]"
+                                    placeholder="Detalles del producto..."
+                                />
+                            </div>
+
+                            <div className="bg-slate-50/50 dark:bg-slate-900/50 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 space-y-6">
+                                <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-4">Variante Inicial</h4>
+                                <div className="grid grid-cols-3 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">SKU</label>
+                                        <input
+                                            type="text"
+                                            value={productForm.initialVariant.sku}
+                                            onChange={(e) => setProductForm({ ...productForm, initialVariant: { ...productForm.initialVariant, sku: e.target.value } })}
+                                            className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-xl px-4 py-3 text-xs font-bold"
+                                            placeholder="SKU-001"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Precio</label>
+                                        <input
+                                            type="number"
+                                            value={productForm.initialVariant.price}
+                                            onChange={(e) => setProductForm({ ...productForm, initialVariant: { ...productForm.initialVariant, price: e.target.value } })}
+                                            className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-xl px-4 py-3 text-xs font-bold"
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Stock Inicial</label>
+                                        <input
+                                            type="number"
+                                            value={productForm.initialVariant.stock}
+                                            onChange={(e) => setProductForm({ ...productForm, initialVariant: { ...productForm.initialVariant, stock: e.target.value } })}
+                                            className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-xl px-4 py-3 text-xs font-bold"
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-10 bg-slate-50/30 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-800/50 flex justify-end gap-4">
+                            <button
+                                onClick={() => setProductModal({ open: false })}
+                                className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleCreateProduct}
+                                disabled={loading || !productForm.name || !productForm.categoryId || !productForm.initialVariant.sku}
+                                className="bg-primary text-white font-black uppercase tracking-widest text-[10px] rounded-2xl px-10 py-4 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20 disabled:opacity-50 disabled:hover:scale-100"
+                            >
+                                {loading ? 'Creando...' : 'Crear Producto'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Nueva Variante */}
+            {variantModal.open && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="glass-surface w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="px-10 py-8 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between bg-white/50 dark:bg-slate-900/50">
+                            <div>
+                                <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Nueva Variante</h3>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Agregar opción al producto</p>
+                            </div>
+                            <button onClick={() => setVariantModal({ open: false })} className="w-10 h-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-10 space-y-6">
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">SKU</label>
+                                    <input
+                                        type="text"
+                                        value={variantForm.sku}
+                                        onChange={(e) => setVariantForm({ ...variantForm, sku: e.target.value })}
+                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                        placeholder="SKU-XXX"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Unidad</label>
+                                    <input
+                                        type="text"
+                                        value={variantForm.unit}
+                                        onChange={(e) => setVariantForm({ ...variantForm, unit: e.target.value })}
+                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                        placeholder="pza, juego, par..."
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre (Opcional)</label>
+                                <input
+                                    type="text"
+                                    value={variantForm.name}
+                                    onChange={(e) => setVariantForm({ ...variantForm, name: e.target.value })}
+                                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                    placeholder="Nombre específico si difiere del producto"
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Precio</label>
+                                    <input
+                                        type="number"
+                                        value={variantForm.price}
+                                        onChange={(e) => setVariantForm({ ...variantForm, price: e.target.value })}
+                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                        placeholder="0.00"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Stock Inicial</label>
+                                    <input
+                                        type="number"
+                                        value={variantForm.stock}
+                                        onChange={(e) => setVariantForm({ ...variantForm, stock: e.target.value })}
+                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                        placeholder="0"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-10 bg-slate-50/30 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-800/50 flex justify-end gap-4">
+                            <button
+                                onClick={() => setVariantModal({ open: false })}
+                                className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleAddVariant}
+                                disabled={loading || !variantForm.sku || !variantForm.price}
+                                className="bg-primary text-white font-black uppercase tracking-widest text-[10px] rounded-2xl px-10 py-4 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20 disabled:opacity-50"
+                            >
+                                {loading ? 'Agregando...' : 'Agregar Variante'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
