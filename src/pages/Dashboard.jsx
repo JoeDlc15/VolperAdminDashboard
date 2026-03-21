@@ -83,10 +83,10 @@ const Dashboard = () => {
 
     // Estadísticas para gráficos
     const quoteStats = [
-        { name: 'Respondida', value: quotations.filter(q => q.status === 'processed').length },
+        { name: 'Aprobada', value: quotations.filter(q => q.status === 'approved').length },
         { name: 'Pendiente', value: quotations.filter(q => q.status === 'pending').length },
-        { name: 'Cerrada', value: 0 }, // Placeholder
-        { name: 'En Proceso', value: 0 }, // Placeholder
+        { name: 'En Revisión', value: quotations.filter(q => q.status === 'in_review').length },
+        { name: 'Rechazada', value: quotations.filter(q => q.status === 'rejected').length },
     ];
 
     const allVariants = products.flatMap(p =>
@@ -165,11 +165,15 @@ const Dashboard = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-6">
-                                            <span className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm ${q.status === 'pending'
-                                                ? 'bg-amber-100/80 text-amber-600 border border-amber-200/50'
-                                                : 'bg-emerald-100/80 text-emerald-600 border border-emerald-200/50'
+                                            <span className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm border ${q.status === 'pending' ? 'bg-amber-100/80 text-amber-600 border-amber-200/50'
+                                                    : q.status === 'in_review' ? 'bg-sky-100/80 text-sky-600 border-sky-200/50'
+                                                        : q.status === 'approved' ? 'bg-emerald-100/80 text-emerald-600 border-emerald-200/50'
+                                                            : q.status === 'rejected' ? 'bg-rose-100/80 text-rose-600 border-rose-200/50'
+                                                                : q.status === 'cancelled' ? 'bg-slate-100/80 text-slate-500 border-slate-200/50'
+                                                                    : q.status === 'closed' ? 'bg-blue-100/80 text-blue-600 border-blue-200/50'
+                                                                        : 'bg-slate-100/80 text-slate-500 border-slate-200/50'
                                                 }`}>
-                                                {q.status === 'pending' ? 'Pendiente' : 'Respondida'}
+                                                {{ pending: 'Pendiente', in_review: 'En Revisión', approved: 'Aprobada', rejected: 'Rechazada', cancelled: 'Cancelada', closed: 'Cerrada' }[q.status] || q.status}
                                             </span>
                                             <button
                                                 onClick={() => handleViewQuote(q.id)}
@@ -280,6 +284,7 @@ const Dashboard = () => {
             <QuotationDetailSidebar
                 quote={selectedQuote}
                 onClose={() => setSelectedQuote(null)}
+                onStatusUpdated={() => { fetchData(); setSelectedQuote(null); }}
             />
         </div>
     );

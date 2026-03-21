@@ -164,11 +164,15 @@ const Quotations = () => {
                                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-tight">{q.phone}</p>
                                                         </td>
                                                         <td className="px-8 py-5 text-center">
-                                                            <span className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm border ${q.status === 'pending'
-                                                                ? 'bg-amber-100/80 text-amber-600 border-amber-200/50'
-                                                                : 'bg-emerald-100/80 text-emerald-600 border-emerald-200/50'
+                                                            <span className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm border ${q.status === 'pending' ? 'bg-amber-100/80 text-amber-600 border-amber-200/50'
+                                                                    : q.status === 'in_review' ? 'bg-sky-100/80 text-sky-600 border-sky-200/50'
+                                                                        : q.status === 'approved' ? 'bg-emerald-100/80 text-emerald-600 border-emerald-200/50'
+                                                                            : q.status === 'rejected' ? 'bg-rose-100/80 text-rose-600 border-rose-200/50'
+                                                                                : q.status === 'cancelled' ? 'bg-slate-100/80 text-slate-500 border-slate-200/50'
+                                                                                    : q.status === 'closed' ? 'bg-blue-100/80 text-blue-600 border-blue-200/50'
+                                                                                        : 'bg-slate-100/80 text-slate-500 border-slate-200/50'
                                                                 }`}>
-                                                                {q.status === 'pending' ? 'Pendiente' : 'Enviada'}
+                                                                {{ pending: 'Pendiente', in_review: 'En Revisión', approved: 'Aprobada', rejected: 'Rechazada', cancelled: 'Cancelada', closed: 'Cerrada' }[q.status] || q.status}
                                                             </span>
                                                         </td>
                                                         <td className="px-8 py-5 text-right">
@@ -277,6 +281,7 @@ const Quotations = () => {
             <QuotationDetailSidebar
                 quote={selectedQuote}
                 onClose={() => setSelectedQuote(null)}
+                onStatusUpdated={() => { fetchQuotations(); setSelectedQuote(null); }}
             />
         </div>
     );
